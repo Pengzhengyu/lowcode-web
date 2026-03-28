@@ -53,9 +53,28 @@ function RightPanelForm(props) {
        );
     }
     return (
-      <div style={{ padding: '40px 0', textAlign: 'center', color: '#bfbfbf' }}>
-        请在画布中选中一个组件以进行配置
-      </div>
+      <Form layout="vertical" style={{ padding: 16 }}>
+        <Collapse defaultActiveKey={['detailGlobal']} bordered={false}>
+          <Panel header="详情页全局配置" key="detailGlobal">
+            <Form.Item label="布局展示模式">
+              {getFieldDecorator('layoutMode', {
+                initialValue: schema.layoutMode || 'auto',
+              })(
+                <Select>
+                  <Select.Option value="auto">自动判定 (分组 &gt; 5 则用 Tabs)</Select.Option>
+                  <Select.Option value="anchor">横向锚点 (全部展开)</Select.Option>
+                  <Select.Option value="tabs">页签模式 (强制Tabs)</Select.Option>
+                </Select>
+              )}
+            </Form.Item>
+            <Form.Item label="页面标题">
+              {getFieldDecorator('header.title', {
+                initialValue: schema.header?.title,
+              })(<Input placeholder="控制预览页头标题" />)}
+            </Form.Item>
+          </Panel>
+        </Collapse>
+      </Form>
     );
   }
 
@@ -199,6 +218,19 @@ export default function RightPanelWrapper(props) {
              ...schema,
              listConfig: { ...(schema.listConfig || {}), ...changedValues }
            });
+        } else {
+           // 详情页全局配置更新 (如 layoutMode, header.title)
+           const newSchema = { ...schema };
+           Object.keys(changedValues).forEach(key => {
+             if (key.includes('.')) {
+                // 处理嵌套键如 header.title
+                const [parent, child] = key.split('.');
+                newSchema[parent] = { ...newSchema[parent], [child]: changedValues[key] };
+             } else {
+                newSchema[key] = changedValues[key];
+             }
+           });
+           updateSchema(newSchema);
         }
         return;
      }

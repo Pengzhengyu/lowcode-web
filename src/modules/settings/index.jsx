@@ -1,11 +1,18 @@
-import React, { useState, useCallback } from 'react';
-import { Layout, Button, Modal, Form, Input, Table, Divider, Radio, Icon } from 'antd';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Layout, Button, Modal, Form, Input, Table, Divider, Radio, Icon, message } from 'antd';
 import LeftPanel from './components/LeftPanel';
 import Canvas from './components/Canvas';
 import RightPanel from './components/RightPanel';
 import DetailEngine from '../render/components/DetailEngine';
 import ListEngine from '../render/components/ListEngine';
+import { JsonEditor as Editor } from 'jsoneditor-react';
+import 'jsoneditor-react/es/editor.min.css';
+import ace from 'brace';
+import 'brace/mode/json';
+import 'brace/theme/github';
 import './style.less';
+
+const API_BASE = 'http://localhost:3000/api/v1';
 
 const { Header, Sider, Content } = Layout;
 
@@ -18,17 +25,47 @@ function SettingsModularEntry({ form }) {
   const [activeFieldId, setActiveFieldId] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
-  const [moduleList] = useState([
-    { id: 1, moduleCode: 'demo_contract', moduleName: '合同签约页面', creator: '系统管理员', createTime: '2026-03-23' },
-    { id: 2, moduleCode: 'demo_settlement', moduleName: '结算单管理', creator: '测试人员', createTime: '2026-03-17' },
-  ]);
+  const [schemaModalVisible, setSchemaModalVisible] = useState(false);
+  const [tempSchemaStr, setTempSchemaStr] = useState('');
+  const [moduleList, setModuleList] = useState([]);
+  const [moduleListLoading, setModuleListLoading] = useState(false);
+
+  // 加载模块列表
+  const fetchModuleList = useCallback(async () => {
+    setModuleListLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/page-config/list`);
+      const json = await res.json();
+      if (json.code === 200) {
+        setModuleList(json.data.map((item, i) => ({
+          id: item.id || i,
+          moduleCode: item.moduleCode,
+          moduleName: item.title,
+          createTime: item.createTime ? new Date(item.createTime).toLocaleDateString('zh-CN') : '-',
+        })));
+      }
+    } catch (e) {
+      // 网络异常时降级为空列表
+    } finally {
+      setModuleListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchModuleList(); }, [fetchModuleList]);
+
+  // 【关键修复】当切换回列表步骤时，自动刷新数据
+  useEffect(() => {
+    if (step === 'list') {
+      fetchModuleList();
+    }
+  }, [step, fetchModuleList]);
 
   const updateSchema = useCallback((newSchema) => {
     setSchema(newSchema);
   }, []);
 
   const handleCreateModule = useCallback(() => {
-    form.validateFields((err, values) => {
+    form.validateFields(async (err, values) => {
       if (!err) {
         const initialSchema = {
           moduleCode: values.moduleCode,
@@ -36,24 +73,46 @@ function SettingsModularEntry({ form }) {
           sections: [],
           listConfig: { searchFields: [], tableColumns: [] },
           api: {},
-          // 预置页头操作按鈕（可在设计器内遊辑扩展）
           buttons: [
             { label: '删除', code: 'delete', type: 'default' },
             { label: '保存', code: 'save', type: 'default' },
             { label: '提交', code: 'submit', type: 'primary' },
           ],
         };
+        
+        // 【关键修复】新增时先执行初次保存，防止列表刷新不到
+        try {
+          await fetch(`${API_BASE}/page-config/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: values.moduleCode, schema: initialSchema }),
+          });
+        } catch (e) {
+          console.error('Initial save failed', e);
+        }
+
         setSchema(initialSchema);
         setStep('design');
         setDesignMode('detail');
         setShowAddModal(false);
         form.resetFields();
+        fetchModuleList();
       }
     });
-  }, [form]);
+  }, [form, fetchModuleList]);
 
-  const handleEditModule = useCallback((record) => {
-    const initialSchema = {
+  const handleEditModule = useCallback(async (record) => {
+    // 先尝试从服务端读取已保存的 schema
+    let loadedSchema = null;
+    try {
+      const res = await fetch(`${API_BASE}/page-config/${record.moduleCode}`);
+      const json = await res.json();
+      if (json.code === 200 && json.data) {
+        loadedSchema = json.data;
+      }
+    } catch (e) { }
+
+    const fallback = {
       moduleCode: record.moduleCode,
       header: { title: record.moduleName, showStatus: true },
       sections: [],
@@ -65,7 +124,7 @@ function SettingsModularEntry({ form }) {
         { label: '提交', code: 'submit', type: 'primary' },
       ],
     };
-    setSchema(initialSchema);
+    setSchema(loadedSchema || fallback);
     setStep('design');
     setDesignMode('detail');
   }, []);
@@ -77,7 +136,7 @@ function SettingsModularEntry({ form }) {
     }
     const hide = Modal.info({ title: '保存中', content: '正在将当前 Schema 模型同步至后端节点...' });
     try {
-      const response = await fetch('http://localhost:3000/api/v1/page-config/save', {
+      const response = await fetch(`${API_BASE}/page-config/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: schema.moduleCode, schema }),
@@ -95,6 +154,21 @@ function SettingsModularEntry({ form }) {
     }
   }, [schema]);
 
+  const handleOpenSchemaEditor = () => {
+    setTempSchemaStr(schema); // 存储为对象，JSONInput 会自动 stringify
+    setSchemaModalVisible(true);
+  };
+
+  const handleApplySchema = () => {
+    if (!tempSchemaStr || typeof tempSchemaStr !== 'object') {
+      message.error('未检测到有效的 Schema 配置');
+      return;
+    }
+    setSchema(tempSchemaStr);
+    setSchemaModalVisible(false);
+    message.success('本地 Schema 已更新并应用渲染');
+  };
+
   // ──────────── 列表管理台 ────────────
   if (step === 'list') {
     const columns = [
@@ -107,9 +181,9 @@ function SettingsModularEntry({ form }) {
         title: '操作',
         render: (_, record) => (
           <span>
-            <a onClick={() => handleEditModule(record)}>进入设计器</a>
+            <Button type="link" style={{ padding: 0 }} onClick={() => handleEditModule(record)}>进入设计器</Button>
             <Divider type="vertical" />
-            <a style={{ color: '#f5222d' }}>删除</a>
+            <Button type="link" style={{ padding: 0, color: '#f5222d' }}>删除</Button>
           </span>
         ),
       },
@@ -133,7 +207,7 @@ function SettingsModularEntry({ form }) {
               </Form>
               <Button type="primary" icon="plus" onClick={() => setShowAddModal(true)}>新增模块</Button>
             </div>
-            <Table columns={columns} dataSource={moduleList} rowKey="id" pagination={{ pageSize: 10 }} />
+            <Table columns={columns} dataSource={moduleList} rowKey="id" loading={moduleListLoading} pagination={{ pageSize: 10 }} />
           </div>
 
           <Modal
@@ -187,7 +261,11 @@ function SettingsModularEntry({ form }) {
           >
             实时预览
           </Button>
-          <Button ghost style={{ marginRight: 8, color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }} onClick={() => console.log('当前 Schema:', JSON.stringify(schema, null, 2))}>
+          <Button 
+            ghost 
+            style={{ marginRight: 8, color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }} 
+            onClick={handleOpenSchemaEditor}
+          >
             查看 Schema
           </Button>
           <Button type="primary" onClick={handleSaveSchema}>保存同步</Button>
@@ -234,6 +312,37 @@ function SettingsModularEntry({ form }) {
         {previewVisible && schema && (
           <PreviewContainer schema={schema} />
         )}
+      </Modal>
+
+      {/* ──────────── Schema 编辑器弹窗 ──────────── */}
+      <Modal
+        title="Schema 协议编辑器"
+        visible={schemaModalVisible}
+        onCancel={() => setSchemaModalVisible(false)}
+        onOk={handleApplySchema}
+        okText="应用修改"
+        cancelText="取消"
+        width={800}
+        bodyStyle={{ padding: 0 }}
+      >
+        <div style={{ padding: '12px 16px', background: '#f6f8fa', fontSize: 13, color: '#666', borderBottom: '1px solid #e8e8e8' }}>
+          可以直接在下方修改 JSON 节点，校验通过后点击“应用修改”。
+        </div>
+        <div style={{ border: 'none', minHeight: '550px' }}>
+          <Editor
+            value={schema}
+            onChange={(newData) => {
+              setTempSchemaStr(newData);
+            }}
+            mode="tree"
+            allowedModes={['tree', 'code', 'text']}
+            ace={ace}
+            theme="ace/theme/github"
+            navigationBar={true}
+            search={true}
+            history={true}
+          />
+        </div>
       </Modal>
     </Layout>
   );

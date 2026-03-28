@@ -11,9 +11,13 @@
   },
   "dependencies": {
     "antd": "^3.26.20",
+    "brace": "^0.11.1",
+    "jsoneditor": "^9.10.5",
+    "jsoneditor-react": "^3.1.2",
     "moment": "^2.29.4",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
+    "react-json-editor-ajrm": "^2.5.14",
     "react-scripts": "4.0.3"
   },
   "eslintConfig": {

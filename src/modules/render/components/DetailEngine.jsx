@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Row, Col, Tabs, Anchor, Button, Tag, message } from 'antd';
+import { Row, Col, Tabs, Anchor, Button, Tag, message, Divider } from 'antd';
 import SectionForm from './SectionForm';
 
 const { TabPane } = Tabs;
@@ -19,8 +19,9 @@ export default function DetailEngine({ schema, recordId, onBack }) {
 
   const moduleCode = schema?.moduleCode;
   const sections = schema?.sections || [];
-  // 多 section 时用 Tabs，单/零 section 直接展开并用 Anchor 辅助导航
-  const useTabMode = sections.length > 2;
+  // 核心逻辑修正：优先读取 layoutMode。如果是 auto，则根据分组数量自动切换，否则严格遵循用户手动选择。
+  const rawLayoutMode = schema?.layoutMode || 'auto';
+  const useTabMode = rawLayoutMode === 'tabs' || (rawLayoutMode === 'auto' && sections.length > 5);
 
   useEffect(() => {
     if (sections.length > 0) {
@@ -59,7 +60,7 @@ export default function DetailEngine({ schema, recordId, onBack }) {
     Object.values(sectionFormRefs.current).forEach(formInst => {
       if (formInst) allData = { ...allData, ...formInst.getFieldsValue() };
     });
-    // 若是编辑场景，带上 id
+    // 如果是编辑场景，带入 id
     if (recordId) allData.id = recordId;
     return allData;
   }, [recordId]);
@@ -69,11 +70,13 @@ export default function DetailEngine({ schema, recordId, onBack }) {
     return new Promise((resolve, reject) => {
       let hasError = false;
       let allData = {};
-      let pending = Object.keys(sectionFormRefs.current).length;
+      const sectionIds = Object.keys(sectionFormRefs.current);
+      let pending = sectionIds.length;
 
       if (pending === 0) { resolve({}); return; }
 
-      Object.values(sectionFormRefs.current).forEach(formInst => {
+      sectionIds.forEach(id => {
+        const formInst = sectionFormRefs.current[id];
         if (!formInst) { pending--; if (pending === 0) resolve(allData); return; }
         formInst.validateFields((err, values) => {
           if (err) hasError = true;
@@ -158,69 +161,96 @@ export default function DetailEngine({ schema, recordId, onBack }) {
 
   return (
     <div className="detail-engine-preview" style={{ background: '#f5f6fa', minHeight: '100%' }}>
-      {/* ── 顶部固定操作栏 ── */}
+      {/* ── 顶部吸顶区域：包含页头与锚点 ── */}
       <div style={{
         background: '#fff',
-        padding: '12px 24px',
-        borderBottom: '1px solid #e8e8e8',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky', top: 0, zIndex: 10,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        position: 'sticky', top: 0, zIndex: 1000,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {onBack && (
-            <span style={{ color: '#1890ff', cursor: 'pointer', fontSize: 13 }} onClick={onBack}>
-              ← 返回
-            </span>
-          )}
-          <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>{title}</span>
-          <Tag color={recordId ? 'processing' : 'orange'}>{recordId ? '编辑' : '新建'}</Tag>
+        {/* 页头行 */}
+        <div style={{
+          padding: '12px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid #f0f0f0'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {onBack && (
+              <Button 
+                type="link" 
+                icon="left-circle" 
+                onClick={onBack}
+                style={{ padding: 0, fontSize: 18, color: '#1890ff', display: 'flex', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: 14, marginLeft: 4 }}>返回</span>
+              </Button>
+            )}
+            <Divider type="vertical" style={{ height: 20 }} />
+            <span style={{ fontSize: 18, fontWeight: 600, color: '#262626' }}>{title}</span>
+            <Tag color={recordId ? 'blue' : 'green'}>{recordId ? '编辑记录' : '新增记录'}</Tag>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {buttons.map(btn => (
+              <Button
+                key={btn.code}
+                type={btn.type === 'primary' ? 'primary' : 'default'}
+                loading={saving && (btn.code === 'submit' || btn.code === 'save')}
+                disabled={loading}
+                icon={btn.code === 'save' ? 'save' : (btn.code === 'submit' ? 'check' : undefined)}
+                onClick={() => handleBtnClick(btn.code)}
+                style={btn.type !== 'primary' ? { borderColor: '#d9d9d9', color: '#595959' } : {}}
+              >
+                {btn.label}
+              </Button>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {buttons.map(btn => (
-            <Button
-              key={btn.code}
-              type={btn.type || 'default'}
-              loading={saving && (btn.code === 'submit' || btn.code === 'save')}
-              disabled={loading}
-              onClick={() => handleBtnClick(btn.code)}
-            >
-              {btn.label}
-            </Button>
-          ))}
-        </div>
-      </div>
 
-      {/* ── 内容区 ── */}
-      {useTabMode ? (
-        <>
-          {/* Tabs 模式（section 超过 2 个） */}
-          <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8', paddingLeft: 24 }}>
+        {/* 锚点行 (仅当模式为 anchor 且有多于 1 个 section 时显示) */}
+        {!useTabMode && sections.length > 1 && (
+          <div style={{ padding: '0 24px', background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+            <Anchor offsetTop={120} style={{ background: 'transparent' }} className="horizontal-anchor">
+              <div style={{ display: 'flex', gap: 24 }}>
+                {sections.map(sec => (
+                  <Link
+                    key={sec.id}
+                    href={`#${sec.id}`}
+                    title={
+                      <span style={{ padding: '10px 0', fontSize: 14, fontWeight: 500 }}>{sec.title}</span>
+                    }
+                  />
+                ))}
+              </div>
+            </Anchor>
+          </div>
+        )}
+
+        {/* Tabs 行 (仅当模式为 tabs 时显示) */}
+        {useTabMode && (
+          <div style={{ padding: '0 24px', background: '#fafafa' }}>
             <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarStyle={{ marginBottom: 0 }}>
               {sections.map(sec => <TabPane tab={sec.title} key={sec.id} />)}
             </Tabs>
           </div>
-          <div style={{ padding: 24 }}>
-            {sections.filter(sec => sec.id === activeTab).map(section => (
-              <div key={section.id} style={{ background: '#fff', padding: '24px', borderRadius: 4, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                {renderSectionForm(section)}
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        /* 展开模式（1~2 个 section）：Anchor 右侧浮动辅助导航 */
-        <Row style={{ padding: 24 }}>
-          <Col span={sections.length > 1 ? 21 : 24}>
+        )}
+      </div>
+
+      {/* ── 内容区 ── */}
+      <div style={{ padding: 24 }}>
+        {useTabMode ? (
+          sections.filter(sec => sec.id === activeTab).map(section => (
+            <div key={section.id} style={{ background: '#fff', padding: '24px', borderRadius: 4, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              {renderSectionForm(section)}
+            </div>
+          ))
+        ) : (
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             {sections.map(section => (
-              <div key={section.id} id={section.id} style={{ background: '#fff', padding: '20px 24px', marginBottom: 16, borderRadius: 4, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                {sections.length > 1 && (
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#333', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
-                    {section.title}
-                  </div>
-                )}
+              <div key={section.id} id={section.id} style={{ background: '#fff', padding: '24px', marginBottom: 24, borderRadius: 4, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: '#333', paddingBottom: 16, marginBottom: 24, borderBottom: '2px solid #1890ff', display: 'inline-block' }}>
+                  {section.title}
+                </div>
                 {renderSectionForm(section)}
               </div>
             ))}
@@ -229,16 +259,20 @@ export default function DetailEngine({ schema, recordId, onBack }) {
                 暂无表单组，请先在设计器中拖入组件
               </div>
             )}
-          </Col>
-          {sections.length > 1 && (
-            <Col span={3}>
-              <Anchor offsetTop={80} style={{ paddingTop: 8 }}>
-                {sections.map(sec => <Link key={sec.id} href={`#${sec.id}`} title={sec.title} />)}
-              </Anchor>
-            </Col>
-          )}
-        </Row>
-      )}
+          </div>
+        )}
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .horizontal-anchor .ant-anchor { display: flex !important; padding: 0 !important; border: none !important; }
+        .horizontal-anchor .ant-anchor-ink { display: none !important; }
+        .horizontal-anchor .ant-anchor-link { padding: 0 !important; margin: 0 !important; border: none !important; }
+        .horizontal-anchor .ant-anchor-link-title { color: #595959 !important; transition: all 0.3s; position: relative; }
+        .horizontal-anchor .ant-anchor-link-active > .ant-anchor-link-title { color: #1890ff !important; font-weight: 600; }
+        .horizontal-anchor .ant-anchor-link-active > .ant-anchor-link-title::after {
+          content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #1890ff;
+        }
+      `}} />
     </div>
   );
 }

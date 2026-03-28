@@ -45,6 +45,8 @@ const s = {
 };
 
 export default function Canvas({ schema, activeFieldId, updateSchema, setActiveField, designMode }) {
+  const [dragOverPath, setDragOverPath] = React.useState(null); // 'sIdx-fIdx'
+  const [dragSource, setDragSource] = React.useState(null); // { sectionIndex, fieldIndex }
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   // ─── Detail Mode: Drop onto canvas ───
@@ -100,23 +102,45 @@ export default function Canvas({ schema, activeFieldId, updateSchema, setActiveF
     setActiveField(fieldId);
   }, [schema, updateSchema, setActiveField]);
 
-  // 支持在指定 insertIndex 处插入（splice），而不是 push 到末尾
+  // 支持在指定 insertIndex 处插入（splice），区分【新拖入】和【内部平移】
   const handleDropInsertAt = useCallback((e, sectionIndex, insertIndex) => {
     e.preventDefault();
     e.stopPropagation();
+    setDragOverPath(null);
+
+    const newSections = JSON.parse(JSON.stringify(schema.sections || []));
+
+    // 场景 A: 内部平移 (Internal Re-order)
+    if (dragSource) {
+      const { sectionIndex: sIdx, fieldIndex: fIdx } = dragSource;
+      const [movedItem] = newSections[sIdx].fields.splice(fIdx, 1);
+      
+      // 修正插入索引：如果是同一个 Section 且插入点在原点之后，splicing 后索引需要减 1
+      let adjustedInsertIdx = insertIndex;
+      if (sIdx === sectionIndex && insertIndex > fIdx) {
+        adjustedInsertIdx = insertIndex - 1;
+      }
+      
+      newSections[sectionIndex].fields.splice(adjustedInsertIdx, 0, movedItem);
+      updateSchema({ ...schema, sections: newSections });
+      setActiveField(movedItem.field);
+      setDragSource(null);
+      return;
+    }
+
+    // 场景 B: 从左侧物料栏新拖入
     const dataStr = e.dataTransfer.getData('componentParams');
     if (!dataStr) return;
     const item = JSON.parse(dataStr);
     if (item.type === 'section') return;
 
     const fieldId = `field_${generateId()}`;
-    const newSections = [...schema.sections];
-    const fields = [...(newSections[sectionIndex].fields || [])];
+    const fields = newSections[sectionIndex].fields || [];
     fields.splice(insertIndex, 0, { label: item.label, type: item.type, field: fieldId });
-    newSections[sectionIndex] = { ...newSections[sectionIndex], fields };
+    newSections[sectionIndex].fields = fields;
     updateSchema({ ...schema, sections: newSections });
     setActiveField(fieldId);
-  }, [schema, updateSchema, setActiveField]);
+  }, [schema, updateSchema, setActiveField, dragSource]);
 
   const handleRemoveField = useCallback((e, sectionIndex, fieldIndex) => {
     e.stopPropagation();
@@ -133,6 +157,19 @@ export default function Canvas({ schema, activeFieldId, updateSchema, setActiveF
     newSections.splice(sectionIndex, 1);
     updateSchema({ ...schema, sections: newSections });
   }, [schema, updateSchema]);
+
+  const handleSectionSort = useCallback((e, targetIndex) => {
+    e.preventDefault();
+    if (!dragSource || dragSource.type !== 'section') return;
+    const sourceIndex = dragSource.index;
+    if (sourceIndex === targetIndex) return;
+
+    const newSections = [...schema.sections];
+    const [moved] = newSections.splice(sourceIndex, 1);
+    newSections.splice(targetIndex, 0, moved);
+    updateSchema({ ...schema, sections: newSections });
+    setDragSource(null);
+  }, [schema, updateSchema, dragSource]);
 
   // ─── List Mode: Drop onto list config ───
   const handleDropOnListConfig = useCallback((e, targetKey) => {
@@ -267,11 +304,21 @@ export default function Canvas({ schema, activeFieldId, updateSchema, setActiveF
                 className={`section-card ${isSectionActive ? 'active' : ''}`}
                 onClick={(e) => { e.stopPropagation(); setActiveField(section.id); }}
                 onDragOver={handleDragOver}
-                onDrop={(e) => handleDropOnSection(e, sIndex)}
-                style={{ background: '#fff', padding: 24, marginBottom: 24, position: 'relative', minHeight: 120 }}
+                onDrop={(e) => {
+                  if (dragSource?.type === 'section') {
+                    handleSectionSort(e, sIndex);
+                  } else {
+                    handleDropOnSection(e, sIndex);
+                  }
+                }}
+                style={{ background: '#fff', padding: 24, marginBottom: 24, position: 'relative', minHeight: 120, border: isSectionActive ? '2px solid #1890ff' : '1px solid transparent' }}
               >
-                <h3 style={{ borderBottom: '1px solid #e8e8e8', paddingBottom: 16, marginBottom: 24, color: '#1890ff', fontWeight: 'bold' }}>
-                  <Icon type="appstore" style={{ marginRight: 8 }} />{section.title}
+                <h3 
+                  draggable={true}
+                  onDragStart={() => setDragSource({ type: 'section', index: sIndex })}
+                  style={{ borderBottom: '1px solid #e8e8e8', paddingBottom: 16, marginBottom: 24, color: '#1890ff', fontWeight: 'bold', cursor: 'move' }}
+                >
+                  <Icon type="bars" style={{ marginRight: 8, cursor: 'move' }} />{section.title}
                 </h3>
                 {isSectionActive && (
                   <Button type="danger" size="small" icon="delete" style={{ position: 'absolute', right: 8, top: 8 }} onClick={(e) => handleRemoveSection(e, sIndex)}>删除区段</Button>
@@ -288,16 +335,25 @@ export default function Canvas({ schema, activeFieldId, updateSchema, setActiveF
                       <React.Fragment key={field.field}>
                         {/* 字段前的插入落点区：悬停时显示蓝色竖线提示 */}
                         <div
-                          className="field-insert-zone"
+                          className={`field-insert-zone ${dragOverPath === `${sIndex}-${fIndex}` ? 'drag-over' : ''}`}
                           onDragOver={(e) => e.preventDefault()}
+                          onDragEnter={() => setDragOverPath(`${sIndex}-${fIndex}`)}
+                          onDragLeave={() => setDragOverPath(null)}
                           onDrop={(e) => handleDropInsertAt(e, sIndex, fIndex)}
                           style={{ width: 8, margin: '0 4px 16px', cursor: 'col-resize', position: 'relative', alignSelf: 'stretch', minHeight: 80 }}
                           title={`插入到第${fIndex + 1}个字段之前`}
                         />
                         <div
                           className={`field-card ${isFieldActive ? 'active' : ''}`}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            // 停止冒泡，防止触发 Section 的拖拽
+                            e.stopPropagation();
+                            setDragSource({ type: 'field', sectionIndex: sIndex, fieldIndex: fIndex });
+                          }}
+                          onDragEnd={() => setDragSource(null)}
                           onClick={(e) => { e.stopPropagation(); setActiveField(field.field); }}
-                          style={{ width: `calc(${field.width || 33.33}% - 28px)`, margin: '0 4px 16px', padding: 16, cursor: 'pointer', position: 'relative' }}
+                          style={{ width: `calc(${field.width || 33.33}% - 28px)`, margin: '0 4px 16px', padding: 16, cursor: 'move', position: 'relative' }}
                         >
                           <div style={{ marginBottom: 10, color: '#595959', fontSize: 14, fontWeight: 500 }}>
                             {field.requiredExp && <span style={{ color: '#f5222d', marginRight: 4 }}>*</span>}
@@ -316,8 +372,10 @@ export default function Canvas({ schema, activeFieldId, updateSchema, setActiveF
                   {/* 末尾追加落点区 */}
                   {section.fields && section.fields.length > 0 && (
                     <div
-                      className="field-insert-zone field-insert-tail"
+                      className={`field-insert-zone field-insert-tail ${dragOverPath === `${sIndex}-${section.fields.length}` ? 'drag-over' : ''}`}
                       onDragOver={(e) => e.preventDefault()}
+                      onDragEnter={() => setDragOverPath(`${sIndex}-${section.fields.length}`)}
+                      onDragLeave={() => setDragOverPath(null)}
                       onDrop={(e) => handleDropInsertAt(e, sIndex, section.fields.length)}
                       style={{ width: 8, margin: '0 4px 16px', cursor: 'col-resize', alignSelf: 'stretch', minHeight: 80 }}
                       title="追加到末尾"

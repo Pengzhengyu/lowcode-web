@@ -116,7 +116,7 @@ export default function ListEngine({ schema, onEnterDetail }) {
     } finally {
       setLoading(false);
     }
-  }, [moduleCode, pagination.current, pagination.pageSize]);
+  }, [moduleCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchData({ current: 1 }); }, [moduleCode]);
 
@@ -141,7 +141,7 @@ export default function ListEngine({ schema, onEnterDetail }) {
     } catch (e) {
       message.error('删除失败');
     }
-  }, [moduleCode, fetchData, pagination.current]);
+  }, [moduleCode, fetchData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!schema) return null;
 
@@ -170,9 +170,9 @@ export default function ListEngine({ schema, onEnterDetail }) {
     width: 160,
     render: (_, record) => (
       <span>
-        <a onClick={() => onEnterDetail && onEnterDetail(record.id)}>查看详情</a>
+        <Button type="link" style={{ padding: 0 }} onClick={() => onEnterDetail && onEnterDetail(record.id)}>查看详情</Button>
         <Divider type="vertical" />
-        <a style={{ color: '#f5222d' }} onClick={() => handleDelete(record)}>删除</a>
+        <Button type="link" style={{ padding: 0, color: '#f5222d' }} onClick={() => handleDelete(record)}>删除</Button>
       </span>
     ),
   };
