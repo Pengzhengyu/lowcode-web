@@ -1,0 +1,42 @@
+{
+  "name": "estate-lowcode-web",
+  "version": "1.0.0",
+  "description": "前端低代码平台：设置器与渲染器引擎双生模块",
+  "private": true,
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "antd": "^3.26.20",
+    "moment": "^2.29.4",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "react-scripts": "4.0.3"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@craco/craco": "^6.4.5",
+    "craco-less": "^1.20.0",
+    "less": "^4.6.4",
+    "less-loader": "^7.3.0"
+  }
+}

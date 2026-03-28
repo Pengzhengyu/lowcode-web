@@ -1,0 +1,89 @@
+/* 科技蓝淡雅风格 (Blue Tone Aesthetic) */
+
+body {
+  background-color: #f0f5ff;
+}
+
+.lowcode-settings-layout {
+  .ant-layout-header {
+    background: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+  }
+  
+  .logo {
+    color: #1890ff;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+
+  /* 画布区样式强化 */
+  .canvas-container {
+    background-color: #f0f5ff !important;
+    
+    .canvas-header {
+      border-top: 4px solid #1890ff;
+      transition: all 0.3s;
+      &:hover {
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1) !important;
+      }
+    }
+
+    /* 区段卡片增加交互呼吸感 */
+    .section-card {
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      border-radius: 8px !important;
+      border: 2px dashed transparent;
+      
+      &:hover {
+        box-shadow: 0 4px 16px rgba(24, 144, 255, 0.12) !important;
+        border-color: #91d5ff !important;
+      }
+      
+      &.active {
+        border-color: #1890ff !important;
+        box-shadow: 0 4px 20px rgba(24, 144, 255, 0.2) !important;
+      }
+    }
+
+    /* 内部组件项增强 */
+    .field-card {
+      border-radius: 6px;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      
+      &:hover {
+        border-color: #69c0ff !important;
+        background: #e6f7ff !important;
+      }
+      
+      &.active {
+        background: #e6f7ff !important;
+        border: 1px dashed #1890ff !important;
+      }
+    }
+
+    /* 拖拽反馈 */
+    .drag-active {
+      border: 2px dashed #1890ff !important;
+      background: rgba(24, 144, 255, 0.05) !important;
+    }
+  }
+
+  /* 物料区皮肤 */
+  .left-panel-container {
+    .material-item {
+      transition: all 0.2s;
+      border-radius: 6px;
+      
+      &:hover {
+        border-color: #1890ff !important;
+        color: #1890ff;
+        background: #e6f7ff !important;
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+        transform: translateY(-2px);
+      }
+    }
+  }
+}
