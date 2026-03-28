@@ -64,6 +64,32 @@ body {
       }
     }
 
+    /* 字段间插入落点：悬停时显示蓝色细竖线 */
+    .field-insert-zone {
+      border-radius: 4px;
+      transition: all 0.2s;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 80%;
+        background: transparent;
+        border-radius: 2px;
+        transition: background 0.2s;
+      }
+
+      &:hover::after,
+      &.drag-over::after {
+        background: #1890ff;
+        box-shadow: 0 0 6px rgba(24, 144, 255, 0.5);
+      }
+    }
+
     /* 拖拽反馈 */
     .drag-active {
       border: 2px dashed #1890ff !important;

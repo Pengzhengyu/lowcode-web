@@ -238,3 +238,40 @@ const executeExpression = (exp, formData) => {
   }
 }
 ```
+
+---
+
+## 9. 开发协作规范 (Development Workflow)
+
+### 9.1 Git 提交规范
+
+本仓库遵循以下轻量协作约定：每次功能开发或 BUG 修复完成后，立即提交并推送至远端。
+
+```bash
+# 提交当前所有改动
+git add .
+git commit -m "feat: 简要描述本次改动"
+
+# 直接推送（已绑定 origin/main，无需携带额外参数）
+git push
+```
+
+commit 消息建议前缀：
+
+| 前缀 | 适用场景 |
+|---|---|
+| `feat:` | 新增功能 |
+| `fix:` | 修复 BUG |
+| `style:` | 样式调整 |
+| `refactor:` | 代码重构 |
+| `chore:` | 配置/文档调整 |
+
+### 9.2 本地启动
+
+```bash
+# 前端低代码管理台（端口 3001）
+npm run start
+
+# 后端 Node API（端口 3000，位于 D:\Glodon\estate-dcm-api）
+cd D:\Glodon\estate-dcm-api && node src/index.js
+```

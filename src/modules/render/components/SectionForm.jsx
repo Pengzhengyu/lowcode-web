@@ -1,34 +1,23 @@
-import React, { Component } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Form, Input, Select, InputNumber, DatePicker, Checkbox, Radio, Cascader, Rate, Switch, Slider, Upload, Button, TreeSelect, Icon } from 'antd';
 import { LogicEngine } from '../utils/sandbox';
 
 const { TextArea } = Input;
-const { RangePicker, MonthPicker } = DatePicker;
+const { RangePicker } = DatePicker;
 
-class SectionForm extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      formData: {},
-    };
-    this.logicEngine = new LogicEngine({});
-  }
+/**
+ * 单个区段表单组件 (Hooks 版)
+ * Antd 3.x 的 getFieldDecorator 仍需用 Form.create() 包裹才能正常获取 form 对象
+ */
+function SectionForm({ section, form, onSectionValuesChange }) {
+  const { getFieldDecorator } = form;
+  // 使用 ref 持有 LogicEngine 实例，避免重复创建
+  const logicEngineRef = useRef(new LogicEngine({}));
 
-  componentDidMount() {
-    this.syncLogicEngine();
-  }
-
-  syncLogicEngine = () => {
-    const { form } = this.props;
-    const values = form.getFieldsValue();
-    this.logicEngine.updateData(values);
-    this.setState({ formData: values });
-  }
-
-  renderFieldWidget = (field) => {
-    const disabled = this.logicEngine.evaluateDisabled(field);
+  const renderFieldWidget = useCallback((field) => {
+    const disabled = logicEngineRef.current.evaluateDisabled(field);
     const placeholder = field.placeholder || '请输入/选择';
-    
+
     switch (field.type) {
       case 'input':
         return <Input disabled={disabled} placeholder={placeholder} />;
@@ -51,9 +40,7 @@ class SectionForm extends Component {
       case 'rangepicker':
         return <RangePicker disabled={disabled} style={{ width: '100%' }} />;
       case 'timepicker':
-        // 为保持简单先用 TimePicker，若是 Antd 3 需要 import TimePicker
-        // 既然顶部没有引 TimePicker，我补充一下
-        return <Input disabled={disabled} placeholder="时间选择占位" type="time" />;
+        return <Input disabled={disabled} placeholder="请选择时间" type="time" />;
       case 'checkbox':
         return <Checkbox.Group disabled={disabled} options={field.options || []} />;
       case 'radio':
@@ -67,52 +54,47 @@ class SectionForm extends Component {
       case 'slider':
         return <Slider disabled={disabled} />;
       case 'upload':
-        return <Upload disabled={disabled}><Button disabled={disabled}><Icon type="upload" /> 点击上传</Button></Upload>;
+        return (
+          <Upload disabled={disabled}>
+            <Button disabled={disabled}><Icon type="upload" /> 点击上传</Button>
+          </Upload>
+        );
       default:
         return <Input disabled={disabled} />;
     }
-  }
+  }, []);
 
-  render() {
-    const { section, form } = this.props;
-    const { getFieldDecorator } = form;
+  return (
+    <div className="lowcode-section" id={section.id}>
+      <div className="section-title" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>
+        {section.title}
+      </div>
+      <div className="section-body" style={{ display: 'flex', flexWrap: 'wrap', margin: '0 -12px' }}>
+        {section.fields?.map(field => {
+          const isVisible = logicEngineRef.current.evaluateVisible(field);
+          if (!isVisible) return null;
+          const isRequired = logicEngineRef.current.evaluateRequired(field);
+          const fieldWidth = field.width || 33.33;
 
-    return (
-      <div className="lowcode-section" id={section.id}>
-        <div className="section-title" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>
-          {section.title}
-        </div>
-        <div className="section-body">
-          {section.fields?.map(field => {
-            // 联动控制 - 是否显示
-            const isVisible = this.logicEngine.evaluateVisible(field);
-            if (!isVisible) return null;
-
-            // 联动控制 - 是否必填
-            const isRequired = this.logicEngine.evaluateRequired(field);
-
-            return (
-              <Form.Item label={field.label} key={field.field} style={{ marginBottom: 16 }}>
+          return (
+            <div key={field.field} style={{ width: `${fieldWidth}%`, padding: '0 12px', marginBottom: 16 }}>
+              <Form.Item label={field.label}>
                 {getFieldDecorator(field.field, {
-                  rules: [
-                    { required: isRequired, message: `请输入${field.label} (必填)` }
-                  ],
+                  rules: [{ required: isRequired, message: `请输入${field.label}` }],
                 })(
-                  this.renderFieldWidget(field)
+                  renderFieldWidget(field)
                 )}
               </Form.Item>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-// 采用 onValuesChange 监听所有的变更以触发沙箱重新计算
 export default Form.create({
-  onValuesChange: (props, changedValues, allValues) => {
-    // 调用 SectionForm 实例的方法触发渲染
+  onValuesChange: (props, _changed, allValues) => {
     if (props.onSectionValuesChange) {
       props.onSectionValuesChange(props.section.id, allValues);
     }
