@@ -92,6 +92,16 @@ function RightPanelForm(props) {
                   </Select>
                 )}
               </Form.Item>
+              <Form.Item label="Label 布局方向">
+                {getFieldDecorator('labelLayout', {
+                  initialValue: item.labelLayout || 'vertical',
+                })(
+                  <Select>
+                    <Select.Option value="vertical">上下排列 (Label 在上)</Select.Option>
+                    <Select.Option value="horizontal">左右排列 (Label 在左)</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
               <Form.Item label="组件类型">
                 {getFieldDecorator('type', {
                   initialValue: item.type,

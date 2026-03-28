@@ -17,6 +17,7 @@ function SectionForm({ section, form, onSectionValuesChange }) {
   const renderFieldWidget = useCallback((field) => {
     const disabled = logicEngineRef.current.evaluateDisabled(field);
     const placeholder = field.placeholder || '请输入/选择';
+    const fullWidth = { style: { width: '100%' } };
 
     switch (field.type) {
       case 'input':
@@ -25,34 +26,40 @@ function SectionForm({ section, form, onSectionValuesChange }) {
         return <TextArea rows={4} disabled={disabled} placeholder={placeholder} />;
       case 'select':
         return (
-          <Select disabled={disabled} placeholder={placeholder}>
+          <Select disabled={disabled} placeholder={placeholder} {...fullWidth} allowClear>
             {field.options?.map(opt => (
               <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
             ))}
           </Select>
         );
       case 'treeselect':
-        return <TreeSelect treeData={field.options || []} disabled={disabled} placeholder={placeholder} treeDefaultExpandAll />;
+        return <TreeSelect treeData={field.options || []} disabled={disabled} placeholder={placeholder} {...fullWidth} treeDefaultExpandAll allowClear />;
       case 'number':
-        return <InputNumber disabled={disabled} placeholder={placeholder} style={{ width: '100%' }} />;
+        return <InputNumber disabled={disabled} placeholder={placeholder} {...fullWidth} />;
       case 'date':
-        return <DatePicker disabled={disabled} placeholder={placeholder} style={{ width: '100%' }} />;
+        return <DatePicker disabled={disabled} placeholder={placeholder} {...fullWidth} />;
       case 'rangepicker':
-        return <RangePicker disabled={disabled} style={{ width: '100%' }} />;
+        return <RangePicker disabled={disabled} {...fullWidth} />;
       case 'timepicker':
         return <Input disabled={disabled} placeholder="请选择时间" type="time" />;
       case 'checkbox':
-        return <Checkbox.Group disabled={disabled} options={field.options || []} />;
+        return (
+          <div style={{ paddingTop: 6 }}>
+            <Checkbox.Group disabled={disabled} options={field.options || [{ label: '选项A', value: 'A' }, { label: '选项B', value: 'B' }]} />
+          </div>
+        );
       case 'radio':
-        return <Radio.Group disabled={disabled} options={field.options || []} />;
+        return (
+          <Radio.Group disabled={disabled} options={field.options || [{ label: '选项A', value: 'A' }, { label: '选项B', value: 'B' }]} />
+        );
       case 'cascader':
-        return <Cascader disabled={disabled} placeholder={placeholder} options={field.options || []} />;
+        return <Cascader disabled={disabled} placeholder={placeholder} options={field.options || []} {...fullWidth} />;
       case 'rate':
         return <Rate disabled={disabled} />;
       case 'switch':
         return <Switch disabled={disabled} />;
       case 'slider':
-        return <Slider disabled={disabled} />;
+        return <Slider disabled={disabled} {...fullWidth} />;
       case 'upload':
         return (
           <Upload disabled={disabled}>
@@ -60,7 +67,7 @@ function SectionForm({ section, form, onSectionValuesChange }) {
           </Upload>
         );
       default:
-        return <Input disabled={disabled} />;
+        return <Input disabled={disabled} placeholder={placeholder} />;
     }
   }, []);
 
@@ -75,16 +82,25 @@ function SectionForm({ section, form, onSectionValuesChange }) {
           if (!isVisible) return null;
           const isRequired = logicEngineRef.current.evaluateRequired(field);
           const fieldWidth = field.width || 33.33;
+          // 支持上下(vertical)和左右(horizontal)两种 label 布局
+          const labelLayout = field.labelLayout || 'vertical';
+          const isHorizontal = labelLayout === 'horizontal';
 
           return (
             <div key={field.field} style={{ width: `${fieldWidth}%`, padding: '0 12px', marginBottom: 16 }}>
-              <Form.Item label={field.label}>
-                {getFieldDecorator(field.field, {
-                  rules: [{ required: isRequired, message: `请输入${field.label}` }],
-                })(
-                  renderFieldWidget(field)
-                )}
-              </Form.Item>
+              <Form
+                layout={isHorizontal ? 'horizontal' : 'vertical'}
+                {...(isHorizontal ? { labelCol: { span: 8 }, wrapperCol: { span: 16 } } : {})}
+              >
+                <Form.Item label={field.label} style={{ marginBottom: 0 }}>
+                  {getFieldDecorator(field.field, {
+                    rules: [{ required: isRequired, message: `请输入${field.label}` }],
+                    ...(field.type === 'switch' || field.type === 'rate' ? { valuePropName: field.type === 'switch' ? 'checked' : 'value' } : {}),
+                  })(
+                    renderFieldWidget(field)
+                  )}
+                </Form.Item>
+              </Form>
             </div>
           );
         })}

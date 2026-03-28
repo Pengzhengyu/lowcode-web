@@ -220,9 +220,9 @@ function SettingsModularEntry({ form }) {
         </Sider>
       </Layout>
 
-      {/* ──────────── 实时预览模态弹窗 ──────────── */}
+      {/* ──────────── 实时预览模态弹窗（列表→详情流） ──────────── */}
       <Modal
-        title={`实时预览 — ${schema && schema.header && schema.header.title} [${designMode === 'list' ? '列表页' : '详情页'}]`}
+        title={`实时预览 — ${schema && schema.header && schema.header.title}`}
         visible={previewVisible}
         onCancel={() => setPreviewVisible(false)}
         footer={null}
@@ -232,13 +232,45 @@ function SettingsModularEntry({ form }) {
         destroyOnClose
       >
         {previewVisible && schema && (
-          designMode === 'list'
-            ? <ListEngine schema={{ ...schema, pageType: 'list' }} />
-            : <DetailEngine schema={{ ...schema, pageType: 'detail' }} />
+          <PreviewContainer schema={schema} />
         )}
       </Modal>
     </Layout>
   );
 }
 
+/** 预览容器：内部管理列表→详情跳转状态 */
+function PreviewContainer({ schema }) {
+  const [previewStep, setPreviewStep] = useState('list'); // 'list' | 'detail'
+  const [activeRecordId, setActiveRecordId] = useState(null);
+
+  const handleEnterDetail = (recordId) => {
+    setActiveRecordId(recordId); // null = 新建
+    setPreviewStep('detail');
+  };
+
+  const handleBack = () => {
+    setPreviewStep('list');
+    setActiveRecordId(null);
+  };
+
+  if (previewStep === 'detail') {
+    return (
+      <DetailEngine
+        schema={schema}
+        recordId={activeRecordId}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  return (
+    <ListEngine
+      schema={schema}
+      onEnterDetail={handleEnterDetail}
+    />
+  );
+}
+
 export default Form.create()(SettingsModularEntry);
+
