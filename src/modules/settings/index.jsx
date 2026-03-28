@@ -36,6 +36,12 @@ function SettingsModularEntry({ form }) {
           sections: [],
           listConfig: { searchFields: [], tableColumns: [] },
           api: {},
+          // 预置页头操作按鈕（可在设计器内遊辑扩展）
+          buttons: [
+            { label: '删除', code: 'delete', type: 'default' },
+            { label: '保存', code: 'save', type: 'default' },
+            { label: '提交', code: 'submit', type: 'primary' },
+          ],
         };
         setSchema(initialSchema);
         setStep('design');
@@ -53,6 +59,11 @@ function SettingsModularEntry({ form }) {
       sections: [],
       listConfig: { searchFields: [], tableColumns: [] },
       api: {},
+      buttons: [
+        { label: '删除', code: 'delete', type: 'default' },
+        { label: '保存', code: 'save', type: 'default' },
+        { label: '提交', code: 'submit', type: 'primary' },
+      ],
     };
     setSchema(initialSchema);
     setStep('design');
@@ -153,10 +164,10 @@ function SettingsModularEntry({ form }) {
   // ──────────── 设计器主界面 ────────────
   return (
     <Layout className="lowcode-settings-layout" style={{ height: '100vh', display: 'flex' }}>
-      <Header style={{ display: 'flex', justifyContent: 'space-between', padding: '0 24px', alignItems: 'center' }}>
-        <div className="logo" style={{ cursor: 'pointer', color: '#fff' }} onClick={() => setStep('list')}>
+      <Header style={{ display: 'flex', justifyContent: 'space-between', padding: '0 24px', alignItems: 'center', background: '#001529' }}>
+        <div style={{ cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 500 }} onClick={() => setStep('list')}>
           <Icon type="left" style={{ marginRight: 8, fontSize: 14 }} />
-          Estate LowCode [{schema && schema.moduleCode}]
+          Estate LowCode &nbsp;<span style={{ color: '#69c0ff' }}>[{schema && schema.moduleCode}]</span>
         </div>
         <div className="actions" style={{ display: 'flex', alignItems: 'center' }}>
           <Radio.Group
@@ -171,13 +182,12 @@ function SettingsModularEntry({ form }) {
 
           <Button
             icon="eye"
-            ghost
-            style={{ marginRight: 8, color: '#fff', borderColor: '#fff' }}
+            style={{ marginRight: 8, background: '#13c2c2', borderColor: '#13c2c2', color: '#fff' }}
             onClick={() => setPreviewVisible(true)}
           >
             实时预览
           </Button>
-          <Button type="primary" ghost style={{ marginRight: 8 }} onClick={() => console.log('当前 Schema:', JSON.stringify(schema, null, 2))}>
+          <Button ghost style={{ marginRight: 8, color: '#fff', borderColor: 'rgba(255,255,255,0.35)' }} onClick={() => console.log('当前 Schema:', JSON.stringify(schema, null, 2))}>
             查看 Schema
           </Button>
           <Button type="primary" onClick={handleSaveSchema}>保存同步</Button>
