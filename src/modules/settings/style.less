@@ -1,114 +1,298 @@
-/* 科技蓝淡雅风格 (Blue Tone Aesthetic) */
+/* 
+   Estate LowCode - 极客蓝科技视觉体系 (Tech-Blue Aesthetic) 
+   Base: Ant Design 3.x
+*/
+
+@primary-color: #1677ff;
+@bg-light: #f8faff;
+@border-radius-base: 8px;
+@shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.04);
+@shadow-active: 0 8px 24px rgba(22, 119, 255, 0.15);
 
 body {
-  background-color: #f0f5ff;
+  background-color: @bg-light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .lowcode-settings-layout {
+  height: 100vh;
+  background: white;
+
   .ant-layout-header {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    z-index: 100;
-  }
-  
-  .logo {
-    color: #1890ff;
-    font-weight: 600;
-    font-size: 18px;
-    letter-spacing: 0.5px;
+    background: #001529 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0 24px;
+    z-index: 1000;
   }
 
-  /* 画布区样式强化 */
+  /* 画布区背景：极简点阵网格 */
   .canvas-container {
-    background-color: #f0f5ff !important;
-    
+    background-color: #f0f2f5 !important;
+    background-image: radial-gradient(#d9d9d9 1px, transparent 0);
+    background-size: 24px 24px;
+    transition: all 0.3s;
+
+    .canvas-container-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
     .canvas-header {
-      border-top: 4px solid #1890ff;
-      transition: all 0.3s;
-      &:hover {
-        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1) !important;
+      background: white;
+      padding: 16px 24px;
+      border-radius: @border-radius-base;
+      box-shadow: @shadow-subtle;
+      margin-bottom: 24px;
+      border-left: 4px solid @primary-color;
+
+      h2 {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        font-size: 18px;
+        color: #1f1f1f;
       }
     }
 
-    /* 区段卡片增加交互呼吸感 */
+    /* Section 卡片效果：呼吸感阴影 */
     .section-card {
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      border-radius: 8px !important;
-      border: 2px dashed transparent;
-      
-      &:hover {
-        box-shadow: 0 4px 16px rgba(24, 144, 255, 0.12) !important;
-        border-color: #91d5ff !important;
-      }
-      
-      &.active {
-        border-color: #1890ff !important;
-        box-shadow: 0 4px 20px rgba(24, 144, 255, 0.2) !important;
-      }
-    }
-
-    /* 内部组件项增强 */
-    .field-card {
-      border-radius: 6px;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-      
-      &:hover {
-        border-color: #69c0ff !important;
-        background: #e6f7ff !important;
-      }
-      
-      &.active {
-        background: #e6f7ff !important;
-        border: 1px dashed #1890ff !important;
-      }
-    }
-
-    /* 字段间插入落点：悬停时显示蓝色细竖线 */
-    .field-insert-zone {
-      border-radius: 4px;
-      transition: all 0.2s;
+      background: white;
+      border-radius: @border-radius-base !important;
+      border: 1px solid #f0f0f0;
+      box-shadow: @shadow-subtle;
+      margin-bottom: 24px;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
       position: relative;
 
-      &::after {
-        content: '';
-        position: absolute;
-        top: 10%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 2px;
-        height: 80%;
-        background: transparent;
-        border-radius: 2px;
-        transition: background 0.2s;
+      &:hover {
+        border-color: #d1e9ff;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
       }
 
-      &:hover::after,
-      &.drag-over::after {
-        background: #1890ff;
-        box-shadow: 0 0 6px rgba(24, 144, 255, 0.5);
+      &.active {
+        border-color: @primary-color !important;
+        border-width: 2px !important;
+        box-shadow: @shadow-active !important;
+        transform: scale(1.002);
+      }
+
+      h3 {
+        padding: 12px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #1f1f1f;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+
+        .anticon {
+          color: @primary-color;
+          margin-right: 8px;
+          font-size: 16px;
+        }
       }
     }
 
-    /* 拖拽反馈 */
-    .drag-active {
-      border: 2px dashed #1890ff !important;
-      background: rgba(24, 144, 255, 0.05) !important;
+    /* Field 卡片项 */
+    .field-card {
+      background: #fafafa;
+      border: 1px solid #f0f0f0;
+      border-radius: 6px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: white !important;
+        border-color: @primary-color !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      &.active {
+        background: #e6f4ff !important;
+        border: 1px dashed @primary-color !important;
+        box-shadow: 0 4px 12px rgba(22, 119, 255, 0.1);
+      }
+    }
+
+    /* 增强的插入落点感应区 */
+    .insert-zone {
+      transition: all 0.2s;
+      position: relative;
+      background: transparent;
+
+      &::after {
+        content: "";
+        position: absolute;
+        background: transparent;
+        transition: all 0.2s;
+      }
+
+      &.drag-over {
+        &::after {
+          background: @primary-color;
+          box-shadow: 0 0 8px rgba(22, 119, 255, 0.6);
+        }
+      }
+    }
+
+    /* 垂直插入区 (字段间) */
+    .field-insert-zone {
+      width: 12px !important;
+      margin: 0 -4px 16px !important;
+      z-index: 10;
+
+      &::after {
+        top: 10%;
+        bottom: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 3px;
+        border-radius: 4px;
+      }
+    }
+
+    /* 水平插入区 (Section 间) */
+    .section-insert-zone {
+      height: 16px;
+      margin: -8px 0;
+      width: 100%;
+      z-index: 10;
+
+      &::after {
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 3px;
+        border-radius: 4px;
+      }
     }
   }
 
-  /* 物料区皮肤 */
-  .left-panel-container {
-    .material-item {
-      transition: all 0.2s;
-      border-radius: 6px;
-      
-      &:hover {
-        border-color: #1890ff !important;
-        color: #1890ff;
-        background: #e6f7ff !important;
-        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
-        transform: translateY(-2px);
+  /* 侧边面板通用样式 */
+  .ant-layout-sider {
+    background: white !important;
+
+    .ant-collapse {
+      background: transparent;
+      .ant-collapse-header {
+        font-weight: 600;
+        background: #fafafa;
       }
     }
+  }
+
+  .left-panel-container {
+    .material-item {
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+      background: #fafafa;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        border-color: @primary-color !important;
+        background: white !important;
+        box-shadow: 0 4px 12px rgba(22, 119, 255, 0.12);
+        transform: translateY(-2px);
+
+        .anticon {
+          color: @primary-color;
+        }
+        span {
+          color: @primary-color;
+        }
+      }
+    }
+  }
+}
+
+/* 预览模态框美化 */
+.preview-modal-custom {
+  .ant-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .ant-modal-header {
+    border-bottom: none;
+    padding: 20px 24px;
+  }
+}
+
+/* ==========================================================
+   对齐 schema-components 详情页规范 (Render 渲染侧)
+   ========================================================== */
+.lowcode-section {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: white;
+  border-radius: 4px;
+
+  .section-title {
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    color: rgba(0, 0, 0, 0.85) !important;
+    margin-bottom: 16px !important;
+  }
+
+  .section-body {
+    margin: 0 -8px !important; // 和外层对齐
+  }
+
+  .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  /* 强制覆盖 Antd 原生 label 样式 */
+  .ant-form-item-label {
+    line-height: 22px;
+    padding: 0;
+    margin-bottom: 4px;
+    text-align: left;
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      color: rgba(0, 0, 0, 0.85);
+      font-size: 14px;
+      min-height: 22px;
+
+      &::after {
+        content: ":" !important;
+        position: relative !important;
+        top: -0.5px !important;
+        margin: 0 10px 0 2px !important;
+      }
+
+      &::before {
+        margin: 1px 4px 0 0 !important;
+        color: #f5222d !important;
+        font-size: 14px !important;
+        font-family: SimSun, sans-serif !important;
+      }
+    }
+  }
+}
+
+/* 覆盖 AntD 原生 Anchor 样式使其横向排列于 Header 低侧 */
+.horizontal-anchor {
+  .ant-anchor {
+    display: flex;
+    flex-direction: row;
+    padding-left: 0;
+  }
+  .ant-anchor-ink {
+    display: none;
+  }
+  .ant-anchor-link {
+    padding: 10px 0;
+    margin-right: 32px;
+
+    .ant-anchor-link-title {
+      font-size: 14px;
+      color: #595959;
+    }
+  }
+  .ant-anchor-link-active > .ant-anchor-link-title {
+    color: #1890ff;
+    font-weight: 500;
   }
 }

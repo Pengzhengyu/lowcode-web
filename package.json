@@ -4,7 +4,7 @@
   "description": "前端低代码平台：设置器与渲染器引擎双生模块",
   "private": true,
   "scripts": {
-    "start": "set PORT=8866 && craco start",
+    "start": "craco start",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
