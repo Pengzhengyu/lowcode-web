@@ -121,7 +121,7 @@ function RightPanelForm(props) {
       const listConfig = schema?.listConfig || {};
       return (
         <Form layout="vertical" style={{ padding: 16 }}>
-          <Collapse defaultActiveKey={["pagination"]} bordered={false}>
+          <Collapse defaultActiveKey={["pagination", "tableStyles"]} bordered={false}>
             <Panel header="表格列表全局配置" key="pagination">
               <Form.Item label="开启分页特性">
                 {getFieldDecorator("pagination", {
@@ -133,6 +133,31 @@ function RightPanelForm(props) {
                 {getFieldDecorator("pageSize", {
                   initialValue: listConfig.pageSize || 10,
                 })(<InputNumber min={5} style={{ width: "100%" }} />)}
+              </Form.Item>
+            </Panel>
+            <Panel header="表格全局样式" key="tableStyles">
+              <Form.Item label="显示斑马纹">
+                {getFieldDecorator("zebra", {
+                  valuePropName: "checked",
+                  initialValue: !!listConfig.zebra,
+                })(<Switch />)}
+              </Form.Item>
+              <Form.Item label="显示外边框">
+                {getFieldDecorator("bordered", {
+                  valuePropName: "checked",
+                  initialValue: !!listConfig.bordered,
+                })(<Switch />)}
+              </Form.Item>
+              <Form.Item label="表格尺寸">
+                {getFieldDecorator("size", {
+                  initialValue: listConfig.size || "middle",
+                })(
+                  <Select>
+                    <Select.Option value="default">默认 (Default)</Select.Option>
+                    <Select.Option value="middle">中等 (Middle)</Select.Option>
+                    <Select.Option value="small">紧凑 (Small)</Select.Option>
+                  </Select>,
+                )}
               </Form.Item>
             </Panel>
           </Collapse>
@@ -178,139 +203,169 @@ function RightPanelForm(props) {
             })(<Input />)}
           </Form.Item>
 
-          {!isSection && (
-            <>
-              <Form.Item label="字段变量名 (Field Index)">
-                {getFieldDecorator("field", {
-                  initialValue: item.field,
-                  rules: [{ required: true, message: "必填" }],
-                })(<Input placeholder="常用英文标识" />)}
-              </Form.Item>
-              <Form.Item label="渲染列宽 (%)">
-                {getFieldDecorator("width", {
-                  initialValue: item.width || 33.33,
-                })(
-                  <Select>
-                    <Select.Option value={25}>25% (一行四列)</Select.Option>
-                    <Select.Option value={33.33}>33.3% (一行三列)</Select.Option>
-                    <Select.Option value={50}>50% (一行两列)</Select.Option>
-                    <Select.Option value={100}>100% (整行铺满)</Select.Option>
-                  </Select>,
-                )}
-              </Form.Item>
-              <Form.Item label="组件类型">
-                {getFieldDecorator("type", {
-                  initialValue: item.type,
-                })(
-                  <Select>
-                    <Select.Option value="input">单行文本 (Input)</Select.Option>
-                    <Select.Option value="textarea">多行文本 (Textarea)</Select.Option>
-                    <Select.Option value="select">下拉选择 (Select)</Select.Option>
-                    <Select.Option value="treeselect">树状选择 (TreeSelect)</Select.Option>
-                    <Select.Option value="number">数字输入 (Number)</Select.Option>
-                    <Select.Option value="date">日期选择 (DatePicker)</Select.Option>
-                    <Select.Option value="rangepicker">日期范围 (RangePicker)</Select.Option>
-                    <Select.Option value="radio">单选按钮 (Radio)</Select.Option>
-                    <Select.Option value="checkbox">多选按钮 (Checkbox)</Select.Option>
-                    <Select.Option value="switch">开关组件 (Switch)</Select.Option>
-                    <Select.Option value="cascader">级联选择 (Cascader)</Select.Option>
-                    <Select.Option value="upload">文件上传 (Upload)</Select.Option>
-                    <Select.Option value="editableTable">可编辑表格 (EditableTable)</Select.Option>
-                  </Select>,
-                )}
-              </Form.Item>
-              <Form.Item label="其他交互配置">
-                <div style={{ display: "flex", gap: 16 }}>
-                  {getFieldDecorator("allowClear", {
+          {!isSection &&
+            (activeFieldId?.startsWith("col_") || schema.listConfig?.tableColumns?.find((c) => c.field === activeFieldId)) && (
+              <>
+                <Form.Item label="对齐方式">
+                  {getFieldDecorator("align", {
+                    initialValue: item.align || "left",
+                  })(
+                    <Select>
+                      <Select.Option value="left">左对齐 (Left)</Select.Option>
+                      <Select.Option value="center">居中 (Center)</Select.Option>
+                      <Select.Option value="right">右对齐 (Right)</Select.Option>
+                    </Select>,
+                  )}
+                </Form.Item>
+                <Form.Item label="列宽 (px)">
+                  {getFieldDecorator("width", {
+                    initialValue: item.width || 150,
+                  })(<InputNumber min={50} style={{ width: "100%" }} />)}
+                </Form.Item>
+                <Form.Item label="溢出文本省略">
+                  {getFieldDecorator("ellipsis", {
                     valuePropName: "checked",
-                    initialValue: item.allowClear !== false,
-                  })(<Checkbox>允许清除</Checkbox>)}
-                  {getFieldDecorator("disabled", {
-                    valuePropName: "checked",
-                    initialValue: !!item.disabled,
-                  })(<Checkbox>静态禁用</Checkbox>)}
-                </div>
-              </Form.Item>
-
-              {["select", "treeselect", "radio", "checkbox", "cascader"].includes(item.type) && (
-                <Form.Item label="选项数据 (Options)">
-                  {getFieldDecorator("options", {
-                    initialValue: item.options || [],
-                  })(<OptionsEditor />)}
+                    initialValue: item.ellipsis !== false,
+                  })(<Switch />)}
                 </Form.Item>
-              )}
+              </>
+            )}
 
-              <Form.Item label="占位提示 (Placeholder)">
-                {getFieldDecorator("placeholder", {
-                  initialValue: item.placeholder,
-                })(<Input placeholder="覆盖默认的 请输入/选择 提示词" />)}
-              </Form.Item>
-
-              {item.type === "input" && (
-                <>
-                  <Form.Item label="前缀 (Prefix)">
-                    {getFieldDecorator("prefix", {
-                      initialValue: item.prefix,
-                    })(<Input placeholder="输入框内前缀文本" />)}
-                  </Form.Item>
-                  <Form.Item label="后缀 (Suffix)">
-                    {getFieldDecorator("suffix", {
-                      initialValue: item.suffix,
-                    })(<Input placeholder="输入框内后缀文本" />)}
-                  </Form.Item>
-                  <Form.Item label="内嵌图标 (Icon Type)">
-                    {getFieldDecorator("icon", {
-                      initialValue: item.icon,
-                    })(<Input placeholder="Antd 原生 Icon，如 user" />)}
-                  </Form.Item>
-                </>
-              )}
-
-              {["input", "textarea"].includes(item.type) && (
-                <Form.Item label="最大输入长度 (MaxLength)">
-                  {getFieldDecorator("maxLength", {
-                    initialValue: item.maxLength,
-                  })(<InputNumber min={1} style={{ width: "100%" }} />)}
+          {!isSection &&
+            !activeFieldId?.startsWith("col_") &&
+            !schema.listConfig?.tableColumns?.find((c) => c.field === activeFieldId) && (
+              <>
+                <Form.Item label="字段变量名 (Field Index)">
+                  {getFieldDecorator("field", {
+                    initialValue: item.field,
+                    rules: [{ required: true, message: "必填" }],
+                  })(<Input placeholder="常用英文标识" />)}
                 </Form.Item>
-              )}
-
-              {item.type === "number" && (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Form.Item label="最小值" style={{ flex: 1 }}>
-                    {getFieldDecorator("min", {
-                      initialValue: item.min,
-                    })(<InputNumber style={{ width: "100%" }} />)}
-                  </Form.Item>
-                  <Form.Item label="最大值" style={{ flex: 1 }}>
-                    {getFieldDecorator("max", {
-                      initialValue: item.max,
-                    })(<InputNumber style={{ width: "100%" }} />)}
-                  </Form.Item>
-                  <Form.Item label="步长" style={{ flex: 1 }}>
-                    {getFieldDecorator("step", {
-                      initialValue: item.step || 1,
-                    })(<InputNumber style={{ width: "100%" }} />)}
-                  </Form.Item>
-                </div>
-              )}
-
-              {["date", "rangepicker", "timepicker"].includes(item.type) && (
-                <Form.Item label="显示格式 (Format)">
-                  {getFieldDecorator("format", {
-                    initialValue: item.format,
-                  })(<Input placeholder="覆盖默认，如 YYYY-MM-DD" />)}
+                <Form.Item label="渲染列宽 (%)">
+                  {getFieldDecorator("width", {
+                    initialValue: item.width || 33.33,
+                  })(
+                    <Select>
+                      <Select.Option value={25}>25% (一行四列)</Select.Option>
+                      <Select.Option value={33.33}>33.3% (一行三列)</Select.Option>
+                      <Select.Option value={50}>50% (一行两列)</Select.Option>
+                      <Select.Option value={100}>100% (整行铺满)</Select.Option>
+                    </Select>,
+                  )}
                 </Form.Item>
-              )}
-
-              {item.type === "editableTable" && (
-                <Form.Item label="表格列定义 (Columns)">
-                  {getFieldDecorator("columns", {
-                    initialValue: item.columns || [],
-                  })(<ColumnsEditor />)}
+                <Form.Item label="组件类型">
+                  {getFieldDecorator("type", {
+                    initialValue: item.type,
+                  })(
+                    <Select>
+                      <Select.Option value="input">单行文本 (Input)</Select.Option>
+                      <Select.Option value="textarea">多行文本 (Textarea)</Select.Option>
+                      <Select.Option value="select">下拉选择 (Select)</Select.Option>
+                      <Select.Option value="treeselect">树状选择 (TreeSelect)</Select.Option>
+                      <Select.Option value="number">数字输入 (Number)</Select.Option>
+                      <Select.Option value="date">日期选择 (DatePicker)</Select.Option>
+                      <Select.Option value="rangepicker">日期范围 (RangePicker)</Select.Option>
+                      <Select.Option value="radio">单选按钮 (Radio)</Select.Option>
+                      <Select.Option value="checkbox">多选按钮 (Checkbox)</Select.Option>
+                      <Select.Option value="switch">开关组件 (Switch)</Select.Option>
+                      <Select.Option value="cascader">级联选择 (Cascader)</Select.Option>
+                      <Select.Option value="upload">文件上传 (Upload)</Select.Option>
+                      <Select.Option value="editableTable">可编辑表格 (EditableTable)</Select.Option>
+                    </Select>,
+                  )}
                 </Form.Item>
-              )}
-            </>
-          )}
+                <Form.Item label="其他交互配置">
+                  <div style={{ display: "flex", gap: 16 }}>
+                    {getFieldDecorator("allowClear", {
+                      valuePropName: "checked",
+                      initialValue: item.allowClear !== false,
+                    })(<Checkbox>允许清除</Checkbox>)}
+                    {getFieldDecorator("disabled", {
+                      valuePropName: "checked",
+                      initialValue: !!item.disabled,
+                    })(<Checkbox>静态禁用</Checkbox>)}
+                  </div>
+                </Form.Item>
+
+                {["select", "treeselect", "radio", "checkbox", "cascader"].includes(item.type) && (
+                  <Form.Item label="选项数据 (Options)">
+                    {getFieldDecorator("options", {
+                      initialValue: item.options || [],
+                    })(<OptionsEditor />)}
+                  </Form.Item>
+                )}
+
+                <Form.Item label="占位提示 (Placeholder)">
+                  {getFieldDecorator("placeholder", {
+                    initialValue: item.placeholder,
+                  })(<Input placeholder="覆盖默认的 请输入/选择 提示词" />)}
+                </Form.Item>
+
+                {item.type === "input" && (
+                  <>
+                    <Form.Item label="前缀 (Prefix)">
+                      {getFieldDecorator("prefix", {
+                        initialValue: item.prefix,
+                      })(<Input placeholder="输入框内前缀文本" />)}
+                    </Form.Item>
+                    <Form.Item label="后缀 (Suffix)">
+                      {getFieldDecorator("suffix", {
+                        initialValue: item.suffix,
+                      })(<Input placeholder="输入框内后缀文本" />)}
+                    </Form.Item>
+                    <Form.Item label="内嵌图标 (Icon Type)">
+                      {getFieldDecorator("icon", {
+                        initialValue: item.icon,
+                      })(<Input placeholder="Antd 原生 Icon，如 user" />)}
+                    </Form.Item>
+                  </>
+                )}
+
+                {["input", "textarea"].includes(item.type) && (
+                  <Form.Item label="最大输入长度 (MaxLength)">
+                    {getFieldDecorator("maxLength", {
+                      initialValue: item.maxLength,
+                    })(<InputNumber min={1} style={{ width: "100%" }} />)}
+                  </Form.Item>
+                )}
+
+                {item.type === "number" && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Form.Item label="最小值" style={{ flex: 1 }}>
+                      {getFieldDecorator("min", {
+                        initialValue: item.min,
+                      })(<InputNumber style={{ width: "100%" }} />)}
+                    </Form.Item>
+                    <Form.Item label="最大值" style={{ flex: 1 }}>
+                      {getFieldDecorator("max", {
+                        initialValue: item.max,
+                      })(<InputNumber style={{ width: "100%" }} />)}
+                    </Form.Item>
+                    <Form.Item label="步长" style={{ flex: 1 }}>
+                      {getFieldDecorator("step", {
+                        initialValue: item.step || 1,
+                      })(<InputNumber style={{ width: "100%" }} />)}
+                    </Form.Item>
+                  </div>
+                )}
+
+                {["date", "rangepicker", "timepicker"].includes(item.type) && (
+                  <Form.Item label="显示格式 (Format)">
+                    {getFieldDecorator("format", {
+                      initialValue: item.format,
+                    })(<Input placeholder="覆盖默认，如 YYYY-MM-DD" />)}
+                  </Form.Item>
+                )}
+
+                {item.type === "editableTable" && (
+                  <Form.Item label="表格列定义 (Columns)">
+                    {getFieldDecorator("columns", {
+                      initialValue: item.columns || [],
+                    })(<ColumnsEditor />)}
+                  </Form.Item>
+                )}
+              </>
+            )}
         </Panel>
 
         {!isSection && (
